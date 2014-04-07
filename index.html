@@ -1,0 +1,177 @@
+<!doctype html>
+<html>
+    <head>
+        <meta name='viewport' content='width=device-width, initial-scale=1, user-scalable=no'>
+        <title>GTBT</title>
+        <script src='//code.jquery.com/jquery-2.1.0.min.js'></script>
+        <script>
+// take care of resizing
+$(window).resize(function () {
+    var cell = Math.min($(window).innerWidth(), $(window).innerHeight()) / 3;
+    $('td').width(cell);
+    $('td').height(cell);
+    $('body').height($(window).innerHeight());
+    $('#uglycsshack').css('margin-bottom', (-1.5 * cell) + 'px');
+});
+
+var usable = false;
+
+function request_failed() {
+    $('#update').addClass('broken');
+}
+
+function get_initial_state() {
+    $('#animate').addClass('spinner');
+    $.get('state', function (data) {
+        usable = true;
+        $('[data-ilk="' + data.trim() + '"]').addClass('active');
+    }).fail(request_failed).always(function () {
+        $('#animate').removeClass('spinner');
+    });
+}
+
+function button_click() {
+    if (!usable) {
+        return;
+    }
+
+    if ($(this).hasClass('active') || $(this).hasClass('pending')) {
+        $('.pending').removeClass('pending');
+    } else {
+        $('.pending').removeClass('pending');
+        $(this).addClass('pending');
+    }
+}
+
+function update_click() {
+    if (!usable) {
+        return;
+    }
+
+    $('#animate').addClass('spinner');
+    usable = false;
+    $.post('state', { 'new': $('.pending').attr('data-ilk') }, function (data) {
+        usable = true;
+        $('.pending').removeClass('pending');
+        $('.active').removeClass('active');
+        $('[data-ilk="' + data.trim() + '"]').addClass('active');
+    }).fail(request_failed).always(function () {
+        $('#animate').removeClass('spinner');
+    });
+}
+
+// on load
+$(function () {
+    $(window).resize();
+    get_initial_state();
+    $('.button').click(button_click);
+    $('#update').click(update_click);
+})
+        </script>
+        <style>
+.ilk {
+    font-size: 10pt;
+    background: #B8EBFF;
+}
+
+.short {
+    font-size: 42pt;
+}
+
+.active {
+    background: #6DA6D9
+}
+
+.pending {
+    background: #FFF3A6;
+}
+
+body {
+    margin: auto;
+}
+
+table {
+    clear: both;
+    margin: auto;
+    position: relative;
+    border-collapse: collapse;
+    border-spacing: 0px;
+}
+
+td {
+    padding: 0px;
+    vertical-align: middle;
+    text-align: center;
+}
+
+#uglycsshack {
+    float: left;
+    height: 50%;
+}
+
+/* the update button */
+/* normal state */
+#update {
+    background: #A1E0C5;
+}
+
+/* broken */
+.broken {
+    background: #FF4136 !important;
+}
+
+/* loading animation,
+   courtesy of https://github.com/tobiasahlin/SpinKit
+*/
+.spinner {
+    width: 50%;
+    height: 50%;
+    margin: auto;
+    background-color: #00B567;
+
+    -webkit-animation: rotateplane 1.6s infinite ease-in-out;
+    animation: rotateplane 1.6s infinite ease-in-out;
+}
+
+@-webkit-keyframes rotateplane {
+    0% { -webkit-transform: perspective(120px) }
+    50% { -webkit-transform: perspective(120px) rotateY(180deg) }
+    100% { -webkit-transform: perspective(120px) rotateY(180deg)  rotateX(180deg) }
+}
+
+@keyframes rotateplane {
+    0% {
+        transform: perspective(120px) rotateX(0deg) rotateY(0deg);
+        -webkit-transform: perspective(120px) rotateX(0deg) rotateY(0deg)
+    } 50% {
+        transform: perspective(120px) rotateX(-180.1deg) rotateY(0deg);
+        -webkit-transform: perspective(120px) rotateX(-180.1deg) rotateY(0deg)
+    } 100% {
+        transform: perspective(120px) rotateX(-180deg) rotateY(-179.9deg);
+        -webkit-transform: perspective(120px) rotateX(-180deg) rotateY(-179.9deg);
+    }
+}
+        </style>
+    </head>
+    <body>
+        <div id='uglycsshack'></div>
+        <table>
+            <tr>
+                <td id='update'><div id='animate'></div></td>
+                <td class='ilk'><div class='short'>↑</div>Interesting</td>
+                <td class='ilk'><div class='short'>↓</div>Boring</td>
+            </tr>
+            <tr>
+                <td class='ilk'><div class='short'>+</div>Useful</td>
+                <td class='button' data-ilk='if'></td>
+                <td class='button' data-ilk='bf'></td>
+            </tr>
+            <tr>
+                <td class='ilk'><div class='short'>0</div>Useless</td>
+                <td class='button' data-ilk='il'></td>
+                <td class='button' data-ilk='bl'></td>
+            </tr>
+        </table>
+        </div>
+    </body>
+</html>
