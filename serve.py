@@ -62,6 +62,7 @@ class Application(tornado.web.Application):
         self.save_current_state()
         self.state = state
         self.last_update = datetime.now()
+        print('State changed to {}'.format(self.state))
 
     def get_history(self):
         cur = self.db.cursor()
