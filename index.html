@@ -21,14 +21,21 @@ function request_failed() {
     $('#update').addClass('broken');
 }
 
+function state_callback(data) {
+    usable = true;
+    $('.pending').removeClass('pending');
+    $('.active').removeClass('active');
+    $('[data-ilk="' + data.trim() + '"]').addClass('active');
+}
+
+function stop_animation() {
+    $('#animate').removeClass('spinner');
+}
+
 function get_initial_state() {
     $('#animate').addClass('spinner');
-    $.get('state', function (data) {
-        usable = true;
-        $('[data-ilk="' + data.trim() + '"]').addClass('active');
-    }).fail(request_failed).always(function () {
-        $('#animate').removeClass('spinner');
-    });
+    $.get('state', state_callback
+    ).fail(request_failed).always(stop_animation);
 }
 
 function button_click() {
@@ -51,15 +58,14 @@ function update_click() {
 
     $('#animate').addClass('spinner');
     usable = false;
-    var new_state = $('.pending').hasClass('active') ? 'none' : $('.pending').attr('data-ilk');
-    $.post('state', { 'new': new_state }, function (data) {
-        usable = true;
-        $('.pending').removeClass('pending');
-        $('.active').removeClass('active');
-        $('[data-ilk="' + data.trim() + '"]').addClass('active');
-    }).fail(request_failed).always(function () {
-        $('#animate').removeClass('spinner');
-    });
+    if ($('.pending').length > 0) {
+        var new_state = $('.pending').hasClass('active') ? 'none' : $('.pending').attr('data-ilk');
+        $.post('state', { 'new': new_state }, state_callback
+        ).fail(request_failed).always(stop_animation);
+    } else {
+        $.get('state', state_callback
+        ).fail(request_failed).always(stop_animation);
+    }
 }
 
 // on load
