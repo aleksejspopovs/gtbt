@@ -60,7 +60,10 @@ class Application(tornado.web.Application):
             return
 
         self.save_current_state()
-        self.state = state
+        if state == 'none':
+            self.state = None
+        else:
+            self.state = state
         self.last_update = datetime.now()
         print('State changed to {}'.format(self.state))
 

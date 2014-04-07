@@ -35,7 +35,7 @@ function button_click() {
         return;
     }
 
-    if ($(this).hasClass('active') || $(this).hasClass('pending')) {
+    if ($(this).hasClass('pending')) {
         $('.pending').removeClass('pending');
     } else {
         $('.pending').removeClass('pending');
@@ -50,7 +50,8 @@ function update_click() {
 
     $('#animate').addClass('spinner');
     usable = false;
-    $.post('state', { 'new': $('.pending').attr('data-ilk') }, function (data) {
+    var new_state = $('.pending').hasClass('active') ? 'none' : $('.pending').attr('data-ilk');
+    $.post('state', { 'new': new_state }, function (data) {
         usable = true;
         $('.pending').removeClass('pending');
         $('.active').removeClass('active');
@@ -69,6 +70,7 @@ $(function () {
 })
         </script>
         <style>
+/* visual stuff */
 .ilk {
     font-size: 10pt;
     background: #B8EBFF;
@@ -76,14 +78,6 @@ $(function () {
 
 .short {
     font-size: 42pt;
-}
-
-.active {
-    background: #6DA6D9
-}
-
-.pending {
-    background: #FFF3A6;
 }
 
 body {
@@ -107,6 +101,24 @@ td {
 #uglycsshack {
     float: left;
     height: 50%;
+}
+
+/* states */
+.active {
+    background: #6DA6D9
+}
+
+.pending {
+    background: #FFF3A6;
+}
+
+.active.pending {
+    background: -moz-linear-gradient(-45deg, #fff3a6 0%, #6da6d9 100%);
+    background: -webkit-gradient(linear, left top, right bottom, color-stop(0%,#fff3a6), color-stop(100%,#6da6d9));
+    background: -webkit-linear-gradient(-45deg, #fff3a6 0%,#6da6d9 100%);
+    background: -o-linear-gradient(-45deg, #fff3a6 0%,#6da6d9 100%);
+    background: -ms-linear-gradient(-45deg, #fff3a6 0%,#6da6d9 100%);
+    background: linear-gradient(135deg, #fff3a6 0%,#6da6d9 100%);
 }
 
 /* the update button */
