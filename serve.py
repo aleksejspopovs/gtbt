@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 import os
 import string
 import sqlite3
@@ -15,23 +16,44 @@ class StateHandler(tornado.web.RequestHandler):
         self.application.update_state(self.get_argument('new'))
         self.get()
 
-class StatsHandler(tornado.web.RequestHandler):
+class StatsTextHandler(tornado.web.RequestHandler):
     def get(self):
         self.write('<pre>')
         for (state, start, end) in self.application.get_history():
             self.write('{} — {}: {}\n'.format(start, end, state))
         self.write('</pre>')
 
+class StatsJsonHandler(tornado.web.RequestHandler):
+    def get(self):
+        # forming JSON using string formatting is pretty disgusting, I know.
+        # but this is very likely to be much more efficient than actually
+        # creating the whole list in memory.
+        last = '['
+        for (state, start, end) in self.application.get_history():
+            self.write(last)
+            last = '{{"start": "{start}", "end": "{end}", "state": "{state}"}},'.format(
+                state=state,
+                start=start,
+                end=end)
+        if last != '[':
+            self.write(last[:-1])
+        else:
+            self.write(last)
+        self.write(']')
+
 
 index_path = os.path.join(os.path.dirname(__file__), 'index.html')
+report_path = os.path.join(os.path.dirname(__file__), 'report.html')
 class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
             # well, this isn't very pretty...
             # but it works!
             (r'/()', tornado.web.StaticFileHandler, {'path': index_path}),
+            (r'/report()', tornado.web.StaticFileHandler, {'path': report_path}),
             (r'/state', StateHandler),
-            (r'/stats', StatsHandler)
+            (r'/stats', StatsTextHandler),
+            (r'/stats.json', StatsJsonHandler)
         ]
         settings = {
             'gzip': True

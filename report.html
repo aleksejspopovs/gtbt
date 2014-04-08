@@ -1,0 +1,146 @@
+
+<!doctype html>
+<html>
+    <head>
+        <meta name='viewport' content='width=device-width, initial-scale=1, user-scalable=no'>
+        <meta charset='utf-8'>
+        <title>GTBT Report</title>
+        <script src='http://code.jquery.com/jquery-2.1.0.min.js'></script>
+        <script>
+var secondsInADay = 24 * 60 * 60;
+function getDayOfEpoch(date) {
+    return Math.floor((date.getTime() - date.getTimezoneOffset() * 60 * 1e3) / (1e3 * secondsInADay));
+}
+
+function getSecondOfDay(date) {
+    return ((date.getTime() - date.getTimezoneOffset() * 60 * 1e3) / 1e3) % secondsInADay;
+}
+
+function formatDayOfEpoch(day) {
+    return (new Date(day * 60 * 60 * 24 * 1e3)).toDateString();
+}
+
+// take care of resizing
+$(window).resize(function () {
+    var width = $(document.body).innerWidth();
+    var height = 80;
+    $(".datacanvas").each(function (_, canvas) { redraw(canvas, width, height) });
+});
+
+function redraw(canvas, width, height) {
+    function secToPx(px) {
+        // return Math.round(px * (canvas.width / secondsInADay));
+        return px * (canvas.width / secondsInADay);
+    }
+    canvas.width = width;
+    canvas.height = height;
+    var mark_height = 10;
+    var state_height = (height - mark_height) / 2;
+    var text_height = state_height * 0.55;
+
+    var day = canvas.id.slice(7, canvas.id.length);
+    var ctx = canvas.getContext('2d');
+
+    ctx.lineWidth = '1';
+    ctx.strokeStyle = 'rgba(0, 0, 0, 255)';
+    ctx.fillStyle = '#AAAAAA';
+    ctx.font = mark_height + 'px sans-serif';
+    ctx.textBaseline = 'alphabetic';
+    for (var i = 0; i <= 24; i++) {
+        ctx.beginPath();
+        ctx.moveTo(secToPx(i * 60 * 60), 0);
+        ctx.lineTo(secToPx(i * 60 * 60), canvas.height);
+        ctx.stroke();
+        ctx.fillText(i, secToPx(i * 60 * 60) + 3, canvas.height - 1);
+    }
+    ctx.clearRect(0, 0, canvas.width, canvas.height - mark_height);
+
+    ctx.font = text_height + 'px sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('interesting', 2, state_height / 2);
+    ctx.fillText('useful', 2, 1.5 * state_height);
+
+    for (var i = 0; i < days[day].length; i++) {
+        var from = getSecondOfDay(days[day][i].start);
+        var to = getSecondOfDay(days[day][i].end);
+
+        ctx.fillStyle = days[day][i].state[0] == 'i' ? '#FF851B' : '#FFF091';
+        ctx.fillRect(secToPx(from),
+            0,
+            secToPx(to - from),
+            state_height);
+
+        ctx.fillStyle = days[day][i].state[1] == 'l' ? '#85144B' : '#F0B9E3';
+        ctx.fillRect(secToPx(from),
+            state_height,
+            secToPx(to - from),
+            state_height);
+    }
+}
+
+var days = {};
+
+function splitDataIntoDays(data) {
+    /* this function assumes that
+        a) the data is sorted
+        b) no state spans multiple days
+       although a) is a perfectly valid assumption, b) isn't.
+       i should fix this one day.
+    */
+    var last_date = undefined;
+    var temp = [];
+    var res = {};
+    for (var i = 0; i < data.length; i++) {
+        data[i].start = new Date(data[i].start);
+        data[i].end = new Date(data[i].end);
+        if (getDayOfEpoch(data[i].start) != last_date) {
+            if (temp.length > 0)
+                res[last_date] = temp;
+            last_date = getDayOfEpoch(data[i].start);
+            temp = [];
+        }
+        temp.push(data[i]);
+    }
+    if (temp.length > 0)
+        res[last_date] = temp;
+    return res;
+}
+
+function initializeContainers() {
+    for (var date in days) {
+        $(document.body).append(
+            '<div class="day_container">' +
+                '<h1>' + formatDayOfEpoch(date) + '</h1>' +
+                '<canvas class="datacanvas" id="canvas_' + date + '">' +
+            '</div>');
+    }
+}
+
+// on load
+$(function () {
+    $.getJSON('stats.json', function (data) {
+        days = splitDataIntoDays(data);
+        initializeContainers();
+        $(window).resize();
+    }).fail(function () {
+        $(document.body).append('<p><strong>Uh-oh!</strong> It appears that your network is broken. Try again.</p>');
+    });
+})
+        </script>
+        <style>
+/* visual stuff */
+body {
+    margin: auto;
+    max-width: 1000px;
+}
+
+.datacanvas {
+    border: 1px solid;
+}
+
+       </style>
+    </head>
+    <body>
+
+    </body>
+</html>
